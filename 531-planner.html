@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5/3/1 Planner</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #1a1d24;
+    --card-border: #2a2e38;
+    --text: #e8e9ec;
+    --muted: #9aa0ab;
+    --accent: #5b8cff;
+    --accent-dim: #2c3a5e;
+    --amrap: #ffb347;
+    --deload: #6b7280;
+    --danger: #e05d5d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin: 8px 0 4px;
+  }
+  p.sub {
+    color: var(--muted);
+    margin: 0 0 20px;
+    font-size: 0.9rem;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 1.1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .card h2 .tm {
+    color: var(--muted);
+    font-weight: normal;
+    font-size: 0.85rem;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    background: #11141a;
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+  .row {
+    display: flex;
+    gap: 10px;
+  }
+  .row > div { flex: 1; }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text);
+  }
+  button.danger {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+  }
+  button.mode-btn, button.type-btn {
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    flex: 1;
+  }
+  button.mode-btn.active, button.type-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  th, td {
+    text-align: center;
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  th {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  td.set-label {
+    text-align: left;
+    color: var(--muted);
+  }
+  td.amrap {
+    color: var(--amrap);
+    font-weight: 600;
+  }
+  .week4 td { color: var(--deload); }
+  .exercise-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .exercise-actions button {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+  .empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 24px 0;
+    font-size: 0.9rem;
+  }
+  .footer-note {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 24px;
+    line-height: 1.4;
+  }
+  dialog {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 360px;
+    width: 90%;
+  }
+  dialog::backdrop {
+    background: rgba(0,0,0,0.6);
+  }
+  dialog h3 { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<h1>5/3/1 Planner</h1>
+<p class="sub">Wendler 5/3/1 percentages applied to any training max — barbell lift, weighted pull-up, weighted dip, whatever. For weighted lifts enter a TM in kg (bodyweight exercises with added load: TM = added weight only, e.g. vest/belt). For calisthenics with no added weight, choose <b>Bodyweight (reps)</b> and the percentages are applied to your max reps instead.</p>
+
+<div class="card">
+  <h2>Add exercise</h2>
+  <label for="exName">Name</label>
+  <input type="text" id="exName" placeholder="e.g. Weighted pull-up">
+
+  <label>Exercise type</label>
+  <div class="btn-row" id="typeToggle" style="margin-bottom:12px;">
+    <button type="button" class="type-btn active" data-type="weight">Weighted (kg)</button>
+    <button type="button" class="type-btn" data-type="reps">Bodyweight (reps)</button>
+  </div>
+
+  <div id="weightFields">
+  <label>How do you want to enter your max?</label>
+  <div class="btn-row" id="maxModeToggle" style="margin-bottom:12px;">
+    <button type="button" class="mode-btn active" data-mode="direct">Training max</button>
+    <button type="button" class="mode-btn" data-mode="repmax">Rep max (reps @ weight)</button>
+  </div>
+
+  <div id="directTMFields">
+    <label for="exTM">Training max (kg)</label>
+    <input type="number" id="exTM" step="0.5" min="0" placeholder="44">
+  </div>
+
+  <div id="repMaxFields" style="display:none;">
+    <div class="row">
+      <div>
+        <label for="rmWeight">Weight used (kg)</label>
+        <input type="number" id="rmWeight" step="0.5" min="0" placeholder="e.g. 20 (added weight for calisthenics)">
+      </div>
+      <div>
+        <label for="rmReps">Reps performed</label>
+        <input type="number" id="rmReps" step="1" min="1" placeholder="e.g. 5">
+      </div>
+    </div>
+    <label for="rmPercent">Training max as % of estimated 1RM</label>
+    <input type="number" id="rmPercent" step="1" min="1" max="100" value="90">
+    <p class="sub" id="rmPreview" style="margin:-4px 0 12px;"></p>
+  </div>
+
+  <div class="row">
+    <div>
+      <label for="exRound">Round to nearest (kg)</label>
+      <input type="number" id="exRound" step="0.5" min="0.5" value="1">
+    </div>
+  </div>
+  </div>
+
+  <div id="bwFields" style="display:none;">
+    <div class="row">
+      <div>
+        <label for="bwMaxReps">Max reps in one strict set (no added weight)</label>
+        <input type="number" id="bwMaxReps" step="1" min="1" placeholder="e.g. 12">
+      </div>
+      <div>
+        <label for="bwPercent">Training max as % of rep max</label>
+        <input type="number" id="bwPercent" step="1" min="1" max="100" value="90">
+      </div>
+    </div>
+    <p class="sub" id="bwPreview" style="margin:-4px 0 12px;"></p>
+  </div>
+
+  <button id="addBtn">Add exercise</button>
+</div>
+
+<div id="exerciseList"></div>
+
+<div class="card" id="bulkCard" style="display:none;">
+  <h2>New wave</h2>
+  <p class="sub" style="margin-bottom:12px;">Bump every training max by a fixed amount (typical: +2.5kg upper body, +5kg lower body; +1 rep for bodyweight exercises) to start the next cycle.</p>
+  <div class="row">
+    <div>
+      <label for="bumpAmount">Increase weighted TMs by (kg)</label>
+      <input type="number" id="bumpAmount" step="0.5" value="2.5">
+    </div>
+    <div>
+      <label for="bumpReps">Increase bodyweight TMs by (reps)</label>
+      <input type="number" id="bumpReps" step="0.5" value="1">
+    </div>
+  </div>
+  <button id="bumpBtn">Apply to all</button>
+</div>
+
+<p class="footer-note">
+  Standard 3-week wave + deload: Week 1 = 65/75/85% &times; 5/5/5+, Week 2 = 70/80/90% &times; 3/3/3+, Week 3 = 75/85/95% &times; 5/3/1+, Week 4 (deload) = 40/50/60% &times; 5/5/5. The "+" sets are AMRAP (as many reps as possible) — the number shown is the minimum target, go past it. If you don't know your true 1-rep max, enter a rep max instead (e.g. "5 reps at 20kg added") — it's converted to an estimated 1RM via the Epley formula, then the training max is taken as a percentage of that (90% is the Wendler-standard default, adjustable). For <b>Bodyweight (reps)</b> exercises the same percentages are applied to your training max in reps (max strict reps &times; the percentage you pick, 90% by default) and each set is rounded to whole reps, so a 12-rep max gives a 10.8-rep training max and week 1 reads 7 / 8 / 9+ reps. No weight is involved at all. Data is saved locally in this browser only.
+</p>
+
+<dialog id="confirmDialog">
+  <h3>Delete exercise?</h3>
+  <p id="confirmText" style="color: var(--muted); font-size: 0.9rem;"></p>
+  <div class="btn-row">
+    <button class="danger" id="confirmYes">Delete</button>
+    <button class="secondary" id="confirmNo">Cancel</button>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  var WAVE = [
+    { label: "Week 1", deload: false, sets: [
+      { pct: 0.65, reps: "5" },
+      { pct: 0.75, reps: "5" },
+      { pct: 0.85, reps: "5+" }
+    ]},
+    { label: "Week 2", deload: false, sets: [
+      { pct: 0.70, reps: "3" },
+      { pct: 0.80, reps: "3" },
+      { pct: 0.90, reps: "3+" }
+    ]},
+    { label: "Week 3", deload: false, sets: [
+      { pct: 0.75, reps: "5" },
+      { pct: 0.85, reps: "3" },
+      { pct: 0.95, reps: "1+" }
+    ]},
+    { label: "Week 4 (deload)", deload: true, sets: [
+      { pct: 0.40, reps: "5" },
+      { pct: 0.50, reps: "5" },
+      { pct: 0.60, reps: "5" }
+    ]}
+  ];
+
+  var STORAGE_KEY = "fiveThreeOnePlanner.exercises";
+
+  function loadExercises() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(function (e) {
+        return e && typeof e.name === "string" && isFinite(e.tm) && isFinite(e.round);
+      }).map(function (e) {
+        return { name: e.name, tm: e.tm, round: e.round, type: e.type === "reps" ? "reps" : "weight" };
+      });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveExercises(list) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function roundToNearest(value, increment) {
+    if (!increment || increment <= 0) return value;
+    return Math.round(value / increment) * increment;
+  }
+
+  function formatKg(n) {
+    var rounded = Math.round(n * 100) / 100;
+    return (rounded % 1 === 0) ? String(rounded) : rounded.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+  }
+
+  function epley1RM(weight, reps) {
+    if (reps <= 1) return weight;
+    return weight * (1 + reps / 30);
+  }
+
+  var exercises = loadExercises();
+  var maxMode = "direct";
+  var exType = "weight";
+
+  function render() {
+    var container = document.getElementById("exerciseList");
+    container.innerHTML = "";
+
+    if (exercises.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "No exercises yet — add one above.";
+      container.appendChild(empty);
+      document.getElementById("bulkCard").style.display = "none";
+      return;
+    }
+
+    document.getElementById("bulkCard").style.display = "block";
+
+    exercises.forEach(function (ex, idx) {
+      var card = document.createElement("div");
+      card.className = "card";
+
+      var header = document.createElement("h2");
+      var titleSpan = document.createElement("span");
+      titleSpan.textContent = ex.name;
+      var tmSpan = document.createElement("span");
+      tmSpan.className = "tm";
+      tmSpan.textContent = ex.type === "reps"
+        ? "TM " + formatKg(ex.tm) + " reps (bodyweight)"
+        : "TM " + formatKg(ex.tm) + "kg";
+      var actions = document.createElement("span");
+      actions.className = "exercise-actions";
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "danger";
+      delBtn.textContent = "Delete";
+      delBtn.addEventListener("click", function () { confirmDelete(idx); });
+
+      actions.appendChild(delBtn);
+
+      var leftWrap = document.createElement("span");
+      leftWrap.style.display = "flex";
+      leftWrap.style.flexDirection = "column";
+      leftWrap.appendChild(titleSpan);
+      leftWrap.appendChild(tmSpan);
+
+      header.appendChild(leftWrap);
+      header.appendChild(actions);
+      card.appendChild(header);
+
+      var table = document.createElement("table");
+      var thead = document.createElement("thead");
+      var headRow = document.createElement("tr");
+      ["", "Set 1", "Set 2", "Set 3"].forEach(function (h) {
+        var th = document.createElement("th");
+        th.textContent = h;
+        headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      var tbody = document.createElement("tbody");
+      WAVE.forEach(function (week) {
+        var tr = document.createElement("tr");
+        if (week.deload) tr.className = "week4";
+
+        var labelTd = document.createElement("td");
+        labelTd.className = "set-label";
+        labelTd.textContent = week.label;
+        tr.appendChild(labelTd);
+
+        week.sets.forEach(function (set) {
+          var td = document.createElement("td");
+          var isAmrap = set.reps.indexOf("+") !== -1;
+          if (isAmrap && !week.deload) td.className = "amrap";
+          if (ex.type === "reps") {
+            var targetReps = Math.max(1, Math.round(ex.tm * set.pct));
+            td.textContent = targetReps + (isAmrap ? "+" : "") + " reps";
+          } else {
+            var weight = roundToNearest(ex.tm * set.pct, ex.round);
+            td.innerHTML = formatKg(weight) + "kg &times; " + set.reps;
+          }
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      card.appendChild(table);
+
+      container.appendChild(card);
+    });
+  }
+
+  function confirmDelete(idx) {
+    var dialog = document.getElementById("confirmDialog");
+    document.getElementById("confirmText").textContent =
+      "Delete \"" + exercises[idx].name + "\"? This can't be undone.";
+    dialog.showModal();
+
+    function onYes() {
+      exercises.splice(idx, 1);
+      saveExercises(exercises);
+      render();
+      cleanup();
+    }
+    function onNo() { cleanup(); }
+    function cleanup() {
+      dialog.close();
+      document.getElementById("confirmYes").removeEventListener("click", onYes);
+      document.getElementById("confirmNo").removeEventListener("click", onNo);
+    }
+
+    document.getElementById("confirmYes").addEventListener("click", onYes);
+    document.getElementById("confirmNo").addEventListener("click", onNo);
+  }
+
+  document.querySelectorAll(".mode-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      maxMode = btn.getAttribute("data-mode");
+      document.querySelectorAll(".mode-btn").forEach(function (b) {
+        b.classList.toggle("active", b === btn);
+      });
+      document.getElementById("directTMFields").style.display = maxMode === "direct" ? "block" : "none";
+      document.getElementById("repMaxFields").style.display = maxMode === "repmax" ? "block" : "none";
+    });
+  });
+
+  document.querySelectorAll(".type-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      exType = btn.getAttribute("data-type");
+      document.querySelectorAll(".type-btn").forEach(function (b) {
+        b.classList.toggle("active", b === btn);
+      });
+      document.getElementById("weightFields").style.display = exType === "weight" ? "block" : "none";
+      document.getElementById("bwFields").style.display = exType === "reps" ? "block" : "none";
+    });
+  });
+
+  function updateBwPreview() {
+    var m = parseFloat(document.getElementById("bwMaxReps").value);
+    var p = parseFloat(document.getElementById("bwPercent").value);
+    var preview = document.getElementById("bwPreview");
+    if (!isFinite(m) || m < 1 || !isFinite(p) || p <= 0) {
+      preview.textContent = "";
+      return;
+    }
+    preview.textContent = "Training max: " + formatKg(m * (p / 100)) + " reps";
+  }
+  ["bwMaxReps", "bwPercent"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", updateBwPreview);
+  });
+
+  function updateRmPreview() {
+    var w = parseFloat(document.getElementById("rmWeight").value);
+    var r = parseFloat(document.getElementById("rmReps").value);
+    var p = parseFloat(document.getElementById("rmPercent").value);
+    var preview = document.getElementById("rmPreview");
+    if (!isFinite(w) || w < 0 || !isFinite(r) || r < 1 || !isFinite(p) || p <= 0) {
+      preview.textContent = "";
+      return;
+    }
+    var e1rm = epley1RM(w, r);
+    var tm = e1rm * (p / 100);
+    preview.textContent = "Estimated 1RM: " + formatKg(e1rm) + "kg → training max: " + formatKg(tm) + "kg";
+  }
+  ["rmWeight", "rmReps", "rmPercent"].forEach(function (id) {
+    document.getElementById(id).addEventListener("input", updateRmPreview);
+  });
+
+  document.getElementById("addBtn").addEventListener("click", function () {
+    var nameInput = document.getElementById("exName");
+    var tmInput = document.getElementById("exTM");
+    var roundInput = document.getElementById("exRound");
+
+    var name = nameInput.value.trim();
+    var round = parseFloat(roundInput.value);
+    var tm;
+
+    if (!name) { nameInput.focus(); return; }
+
+    if (exType === "reps") {
+      var bwMaxInput = document.getElementById("bwMaxReps");
+      var bwPercentInput = document.getElementById("bwPercent");
+      var maxReps = parseFloat(bwMaxInput.value);
+      var bwPct = parseFloat(bwPercentInput.value);
+      if (!isFinite(maxReps) || maxReps < 1) { bwMaxInput.focus(); return; }
+      if (!isFinite(bwPct) || bwPct <= 0) bwPct = 90;
+      exercises.push({ name: name, tm: maxReps * (bwPct / 100), round: 1, type: "reps" });
+      saveExercises(exercises);
+      render();
+      nameInput.value = "";
+      bwMaxInput.value = "";
+      bwPercentInput.value = "90";
+      document.getElementById("bwPreview").textContent = "";
+      nameInput.focus();
+      return;
+    }
+
+    if (maxMode === "direct") {
+      tm = parseFloat(tmInput.value);
+      if (!isFinite(tm) || tm <= 0) { tmInput.focus(); return; }
+    } else {
+      var rmWeightInput = document.getElementById("rmWeight");
+      var rmRepsInput = document.getElementById("rmReps");
+      var rmPercentInput = document.getElementById("rmPercent");
+      var w = parseFloat(rmWeightInput.value);
+      var r = parseFloat(rmRepsInput.value);
+      var p = parseFloat(rmPercentInput.value);
+      if (!isFinite(w) || w < 0) { rmWeightInput.focus(); return; }
+      if (!isFinite(r) || r < 1) { rmRepsInput.focus(); return; }
+      if (!isFinite(p) || p <= 0) p = 90;
+      tm = epley1RM(w, r) * (p / 100);
+    }
+
+    if (!isFinite(round) || round <= 0) round = 1;
+
+    exercises.push({ name: name, tm: tm, round: round, type: "weight" });
+    saveExercises(exercises);
+    render();
+
+    nameInput.value = "";
+    tmInput.value = "";
+    roundInput.value = "1";
+    document.getElementById("rmWeight").value = "";
+    document.getElementById("rmReps").value = "";
+    document.getElementById("rmPercent").value = "90";
+    document.getElementById("rmPreview").textContent = "";
+    nameInput.focus();
+  });
+
+  document.getElementById("bumpBtn").addEventListener("click", function () {
+    var amount = parseFloat(document.getElementById("bumpAmount").value);
+    var repsAmount = parseFloat(document.getElementById("bumpReps").value);
+    if (!isFinite(amount)) amount = 0;
+    if (!isFinite(repsAmount)) repsAmount = 0;
+    exercises = exercises.map(function (ex) {
+      var bump = ex.type === "reps" ? repsAmount : amount;
+      return { name: ex.name, tm: ex.tm + bump, round: ex.round, type: ex.type };
+    });
+    saveExercises(exercises);
+    render();
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
