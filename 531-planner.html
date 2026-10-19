@@ -261,7 +261,7 @@
 </div>
 
 <p class="footer-note">
-  Standard 3-week wave + deload: Week 1 = 65/75/85% &times; 5/5/5+, Week 2 = 70/80/90% &times; 3/3/3+, Week 3 = 75/85/95% &times; 5/3/1+, Week 4 (deload) = 40/50/60% &times; 5/5/5. The "+" sets are AMRAP (as many reps as possible) — the number shown is the minimum target, go past it. If you don't know your true 1-rep max, enter a rep max instead (e.g. "5 reps at 20kg added") — it's converted to an estimated 1RM via the Epley formula, then the training max is taken as a percentage of that (90% is the Wendler-standard default, adjustable). For <b>Bodyweight (reps)</b> exercises the same percentages are applied to your training max in reps (max strict reps &times; the percentage you pick, 90% by default) and each set is rounded to whole reps, so a 12-rep max gives a 10.8-rep training max and week 1 reads 7 / 8 / 9+ reps. No weight is involved at all. Data is saved locally in this browser only.
+  Standard 3-week wave + deload: Week 1 = 65/75/85% &times; 5/5/5+, Week 2 = 70/80/90% &times; 3/3/3+, Week 3 = 75/85/95% &times; 5/3/1+, Week 4 (deload) = 40/50/60% &times; 5/5/5. The "+" sets are AMRAP (as many reps as possible) — the number shown is the minimum target, go past it. If you don't know your true 1-rep max, enter a rep max instead (e.g. "5 reps at 20kg added") — it's converted to an estimated 1RM via the Epley formula, then the training max is taken as a percentage of that (90% is the Wendler-standard default, adjustable). For <b>Bodyweight (reps)</b> exercises there is no load to change, so the weeks differ by Wendler's rep scheme: the first two sets use the week's rep count (5s, 3s, 5/3 or deload 5), capped at the % of your training max in reps, and the "+" top set is an AMRAP whose minimum is that week's % of your training max (max strict reps &times; the percentage you pick, 90% by default, rounded to whole reps). A 12-rep max gives a 10.8-rep training max: week 1 = 5 / 5 / 9+, week 2 = 3 / 3 / 10+, week 3 = 5 / 3 / 10+, deload = 4 / 5 / 5. No weight is involved at all. Data is saved locally in this browser only.
 </p>
 
 <dialog id="confirmDialog">
@@ -414,7 +414,10 @@
           var isAmrap = set.reps.indexOf("+") !== -1;
           if (isAmrap && !week.deload) td.className = "amrap";
           if (ex.type === "reps") {
-            var targetReps = Math.max(1, Math.round(ex.tm * set.pct));
+            // Wendler's rep scheme (5s / 3s / 5-3-1+) drives the weeks; the % of
+            // your max reps sets the AMRAP target and caps the lighter sets.
+            var pctReps = Math.max(1, Math.round(ex.tm * set.pct));
+            var targetReps = isAmrap ? pctReps : Math.min(parseInt(set.reps, 10), pctReps);
             td.textContent = targetReps + (isAmrap ? "+" : "") + " reps";
           } else {
             var weight = roundToNearest(ex.tm * set.pct, ex.round);
