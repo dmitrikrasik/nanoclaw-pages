@@ -246,7 +246,7 @@
 
 <div class="card" id="bulkCard" style="display:none;">
   <h2>New wave</h2>
-  <p class="sub" style="margin-bottom:12px;">Bump every training max by a fixed amount (typical: +2.5kg upper body, +5kg lower body; +1 rep for bodyweight exercises) to start the next cycle.</p>
+  <p class="sub" style="margin-bottom:12px;">Bump every training max by a fixed amount (typical: +2.5kg upper body, +5kg lower body; +1 rep for bodyweight exercises) to start the next cycle. A bodyweight exercise only moves up if you didn't log a top set below its target; the logged best is cleared.</p>
   <div class="row">
     <div>
       <label for="bumpAmount">Increase weighted TMs by (kg)</label>
@@ -261,7 +261,7 @@
 </div>
 
 <p class="footer-note">
-  Standard 3-week wave + deload: Week 1 = 65/75/85% &times; 5/5/5+, Week 2 = 70/80/90% &times; 3/3/3+, Week 3 = 75/85/95% &times; 5/3/1+, Week 4 (deload) = 40/50/60% &times; 5/5/5. The "+" sets are AMRAP (as many reps as possible) — the number shown is the minimum target, go past it. If you don't know your true 1-rep max, enter a rep max instead (e.g. "5 reps at 20kg added") — it's converted to an estimated 1RM via the Epley formula, then the training max is taken as a percentage of that (90% is the Wendler-standard default, adjustable). For <b>Bodyweight (reps)</b> exercises there is no load to change, so the weeks differ by Wendler's rep scheme: the first two sets use the week's rep count (5s, 3s, 5/3 or deload 5), capped at the % of your training max in reps, and the "+" top set is an AMRAP whose minimum is that week's % of your training max (max strict reps &times; the percentage you pick, 90% by default, rounded to whole reps). A 12-rep max gives a 10.8-rep training max: week 1 = 5 / 5 / 9+, week 2 = 3 / 3 / 10+, week 3 = 5 / 3 / 10+, deload = 4 / 5 / 5. No weight is involved at all. Data is saved locally in this browser only.
+  Standard 3-week wave + deload: Week 1 = 65/75/85% &times; 5/5/5+, Week 2 = 70/80/90% &times; 3/3/3+, Week 3 = 75/85/95% &times; 5/3/1+, Week 4 (deload) = 40/50/60% &times; 5/5/5. The "+" sets are AMRAP (as many reps as possible) — the number shown is the minimum target, go past it. If you don't know your true 1-rep max, enter a rep max instead (e.g. "5 reps at 20kg added") — it's converted to an estimated 1RM via the Epley formula, then the training max is taken as a percentage of that (90% is the Wendler-standard default, adjustable). For <b>Bodyweight (reps)</b> exercises there is no load to raise, so intensity can't climb the way it does with weight, and the top sets are honest max-effort AMRAPs at bodyweight (they will look alike week to week). The lighter sets follow Wendler's rep scheme (5s, 3s, 5/3, deload 5), capped at the % of your training max in reps. The training max in reps is your max strict reps &times; the percentage you pick (90% by default); the top-set target is that number. Progress comes from rep PRs: log your best top set, and if you beat the target the training max goes up when you start a new wave. A 12-rep max gives a 10.8-rep training max: week 1 = 5 / 5 / 11+, week 2 = 3 / 3 / 11+, week 3 = 5 / 3 / 11+, deload = 4 / 5 / 5. No weight is involved at all. Data is saved locally in this browser only.
 </p>
 
 <dialog id="confirmDialog">
@@ -311,7 +311,9 @@
       return parsed.filter(function (e) {
         return e && typeof e.name === "string" && isFinite(e.tm) && isFinite(e.round);
       }).map(function (e) {
-        return { name: e.name, tm: e.tm, round: e.round, type: e.type === "reps" ? "reps" : "weight" };
+        var out = { name: e.name, tm: e.tm, round: e.round, type: e.type === "reps" ? "reps" : "weight" };
+        if (out.type === "reps" && isFinite(e.best)) out.best = e.best;
+        return out;
       });
     } catch (e) {
       return [];
@@ -414,10 +416,11 @@
           var isAmrap = set.reps.indexOf("+") !== -1;
           if (isAmrap && !week.deload) td.className = "amrap";
           if (ex.type === "reps") {
-            // Wendler's rep scheme (5s / 3s / 5-3-1+) drives the weeks; the % of
-            // your max reps sets the AMRAP target and caps the lighter sets.
+            // No load to change, so: lighter sets use Wendler's rep scheme (5s / 3s /
+            // 5-3 / deload 5), capped at the % of your training max in reps; the "+"
+            // top set is an AMRAP at bodyweight whose target is your training max.
             var pctReps = Math.max(1, Math.round(ex.tm * set.pct));
-            var targetReps = isAmrap ? pctReps : Math.min(parseInt(set.reps, 10), pctReps);
+            var targetReps = isAmrap ? Math.max(1, Math.round(ex.tm)) : Math.min(parseInt(set.reps, 10), pctReps);
             td.textContent = targetReps + (isAmrap ? "+" : "") + " reps";
           } else {
             var weight = roundToNearest(ex.tm * set.pct, ex.round);
@@ -430,6 +433,41 @@
       });
       table.appendChild(tbody);
       card.appendChild(table);
+
+      if (ex.type === "reps") {
+        var logWrap = document.createElement("div");
+        logWrap.style.marginTop = "12px";
+        var logLabel = document.createElement("label");
+        logLabel.textContent = "Best top-set reps this wave (target " + Math.max(1, Math.round(ex.tm)) + "+)";
+        var logInput = document.createElement("input");
+        logInput.type = "number";
+        logInput.className = "best-input";
+        logInput.min = "0";
+        logInput.step = "1";
+        logInput.placeholder = "log after your AMRAP";
+        if (isFinite(ex.best)) logInput.value = ex.best;
+        var logNote = document.createElement("p");
+        logNote.className = "sub";
+        logNote.style.margin = "-4px 0 0";
+        var target = Math.max(1, Math.round(ex.tm));
+        function refreshNote() {
+          var b = parseFloat(logInput.value);
+          if (!isFinite(b)) { logNote.textContent = "Not logged: TM goes up next wave unless you log a miss."; }
+          else if (b >= target) { logNote.textContent = "Target hit: TM goes up next wave."; }
+          else { logNote.textContent = "Below target: TM holds next wave."; }
+        }
+        refreshNote();
+        logInput.addEventListener("input", function () {
+          var b = parseFloat(logInput.value);
+          if (isFinite(b) && b >= 0) { exercises[idx].best = b; } else { delete exercises[idx].best; }
+          saveExercises(exercises);
+          refreshNote();
+        });
+        logWrap.appendChild(logLabel);
+        logWrap.appendChild(logInput);
+        logWrap.appendChild(logNote);
+        card.appendChild(logWrap);
+      }
 
       container.appendChild(card);
     });
@@ -578,8 +616,12 @@
     if (!isFinite(amount)) amount = 0;
     if (!isFinite(repsAmount)) repsAmount = 0;
     exercises = exercises.map(function (ex) {
-      var bump = ex.type === "reps" ? repsAmount : amount;
-      return { name: ex.name, tm: ex.tm + bump, round: ex.round, type: ex.type };
+      if (ex.type === "reps") {
+        // Rep-PR progression: go up only if you hit the top-set target (or didn't log a miss).
+        var hit = !isFinite(ex.best) || ex.best >= Math.max(1, Math.round(ex.tm));
+        return { name: ex.name, tm: hit ? ex.tm + repsAmount : ex.tm, round: ex.round, type: ex.type };
+      }
+      return { name: ex.name, tm: ex.tm + amount, round: ex.round, type: ex.type };
     });
     saveExercises(exercises);
     render();
